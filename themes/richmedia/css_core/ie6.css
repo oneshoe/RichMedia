@@ -1,0 +1,16 @@
+/*****************************************
+  ie6.css (Stylesheet by One Shoe)
+*****************************************/
+
+#menu-holder ul.menu li a{
+  padding: 10px 15px 11px 15px;
+}
+
+#footer {
+  height: 110px;
+}
+
+fieldset {
+  margin-left: -10px;
+}
+

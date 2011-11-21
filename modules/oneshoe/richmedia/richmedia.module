@@ -1,0 +1,374 @@
+<?php
+// $Id$
+
+/**
+ * @file
+ * Main module for extending node objects with Rich Media functionality.
+ *
+ * @name Rich Media
+ * @author One Shoe - www.oneshoe.nl
+ */
+
+/**
+ * Constants.
+ */
+define('RICHMEDIA_DEBUG_OFF', 0);
+define('RICHMEDIA_DEBUG_WATCHDOG', 1);
+define('RICHMEDIA_DEBUG_MESSAGE', 2);
+define('RICHMEDIA_DEBUG_ADVANCED', 4);
+
+define('RICHMEDIA_STATUS_DEFAULT', 0);
+define('RICHMEDIA_STATUS_UPLOADING', 1);
+define('RICHMEDIA_STATUS_UPLOADED', 2);
+define('RICHMEDIA_STATUS_TRANSCODING', 3);
+define('RICHMEDIA_STATUS_TRANSCODED', 4);
+
+define('RICHMEDIA_DELETE_ASSET', 1);
+define('RICHMEDIA_DELETE_ASSET_RECURSIVE', 2);
+
+/**
+ * Implements hook_help().
+ * @link http://api.drupal.org/api/function/hook_help/6
+ */
+function richmedia_help($path = '', $arg = array()) {
+  switch ($path) {
+    case 'admin/help#richmedia':
+      return '<p>'. t('Main module for extending node objects with Rich Media functionality.') .'</p>';
+
+    case 'admin/build/richmedia':
+    case 'admin/settings/vpx_connector':
+      $output = t('<p>In this section you can configure the settings for Rich Media support in this website.</p>');
+      $output .= t('<p>Configuring this module\'s functionality has to be done in separate places.</p><ul>'.
+        '<li><a href="!link_contenttypes">Content-types section</a> for configuring which content type should have Rich Media functionality enabled.</li>'.
+        '<li><a href="!link_vpxconnection">VP-X Connection settings</a> for entering the login-credentials to the VP-Core application.</li>'.
+        '<li><a href="!link_richmedia">Rich Media configuration</a> for configuring miscellaneous options.</li>'.
+        '<li><a href="!link_permissions">Permissions page</a> for assigning the correct permissions to the configured user roles</li>'.
+        '</ul>', array(
+        '!link_contenttypes' => url('admin/content/types'),
+        '!link_vpxconnection' => url('admin/settings/vpx_connector'),
+        '!link_richmedia' => url('admin/build/richmedia'),
+        '!link_permissions' => url('admin/user/permissions'),
+      ));
+      return $output;
+  }
+
+  if ($arg[0] == 'node' && $arg[1] == 'add' && !empty($arg[2])) {
+    foreach (node_get_types('names') as $type => $name) {
+      if (variable_get('richmedia_'. $arg[2], FALSE) && str_replace('_', '-', $type) == $arg[2]) {
+        return 'Help for enabled content types '. __FILE__ .' : '. __LINE__;
+      }
+    }
+  }
+}
+
+/**
+ * Implements hook_perm().
+ * @link http://api.drupal.org/api/function/hook_perm/6
+ */
+function richmedia_perm() {
+  return array('administer richmedia');
+}
+
+/**
+ * Implements hook_menu().
+ * @link http://api.drupal.org/api/function/hook_menu/6
+ */
+function richmedia_menu() {
+  $items = array();
+  $items['admin/build/richmedia'] = array(
+    'title' => 'Rich Media',
+    'description' => 'Administer the settings for using Rich Media functionality in this website.',
+    'access arguments' => array('administer richmedia'),
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array('richmedia_settings_form'),
+    'file' => 'richmedia.admin.inc',
+  );
+  $items['admin/build/richmedia/settings'] = array(
+    'title' => 'Global settings',
+    'type' => MENU_DEFAULT_LOCAL_TASK,
+    'weight' => -10,
+  );
+  return $items;
+}
+
+/**
+ * Function for debugging to screen or watchdog.
+ * @param string $message
+ *   The debug message to send.
+ * @param array $replacements
+ *   Array keyed by the replacement token and it's value being the replacement.
+ *   The format of this array with replacements corresponds to the usage of the t()
+ *   function.
+ * @param mixed $advanced
+ *   Pass an object or return value with advanced information. Depending on the
+ *   debug mode this information is printed to the screen in a drupal_set_message()
+ *   and/or written to watchdog().
+ * @see t()
+ * @see watchdog()
+ */
+function richmedia_debug($message, $replacements = array(), $advanced = NULL, $severity = WATCHDOG_DEBUG) {
+  $debug_level = (int)variable_get('richmedia_debug', 0);
+
+  $_advanced = '';
+  if ($debug_level & RICHMEDIA_DEBUG_ADVANCED) {
+    $_advanced = print_r($advanced, TRUE);
+  }
+
+  if ($debug_level & RICHMEDIA_DEBUG_WATCHDOG) {
+    if ($_advanced) {
+      $message .= ' <br /><pre>@debug_data</pre>';
+      $replacements['@debug_data'] = $_advanced;
+    }
+    watchdog('richmedia', $message, $replacements, WATCHDOG_DEBUG);
+  }
+
+  if ($debug_level & RICHMEDIA_DEBUG_MESSAGE) {
+    drupal_set_message(t($message, $replacements) . ($_advanced ? '<br /><pre>'. check_plain($_advanced) .'</pre>' : ''), 'status');
+  }
+}
+
+/**
+ * Function for retrieving locally stored information about an asset based on a
+ * node ID.
+ * @param int $nid Node ID.
+ * @return object Returns a database record containing asset_id and status.
+ */
+function richmedia_get_asset_info($nid, $asset_id = NULL, $status = NULL, $refresh = FALSE) {
+  static $assets;
+
+  if (isset($asset_id, $status)) {
+    $assets[$nid] = (object)array('asset_id' => $asset_id, 'status' => $status);
+  }
+
+  if (!isset($assets[$nid]) || $refresh) {
+    $assets[$nid] = db_fetch_object(db_query("SELECT asset_id, status FROM {richmedia_asset} WHERE nid = %d", $nid));
+    $result = db_query("SELECT COUNT(nid) as total, type FROM {richmedia_media} WHERE nid = %d GROUP BY type", $nid);
+    while ($record = db_fetch_object($result)) {
+      $name = 'count_'.drupal_strtolower($record->type);
+      $assets[$nid]->$name = $record->total;
+    }
+    $result = db_query("SELECT mediafile_id, placement FROM {richmedia_media} WHERE type = 'VIDEO' AND nid = %d ORDER BY placement ASC", $nid);
+    while ($record = db_fetch_object($result)) {
+      $assets[$nid]->mediafiles[$record->placement] = $record->mediafile_id;
+    }
+  }
+  return $assets[$nid];
+}
+
+/**
+ * Function for deleting all locally stored asset information.
+ * @param int $nid Node ID.
+ */
+function _richmedia_asset_delete($nid) {
+  db_query("DELETE FROM {richmedia_asset} WHERE nid = %d", $nid);
+}
+
+/**
+ * Function for storing asset information in a local database table for later
+ * linking to VP-Core asset.
+ * @param int $nid Node ID.
+ * @param string $asset_id MediaMosa asset identifier.
+ * @param int $status Status for the asset.
+ * @param int $nid Node ID.
+ */
+function _richmedia_asset_store($nid, $asset_id, $status = 0) {
+  $update = array();
+  if (db_result(db_query("SELECT nid FROM {richmedia_asset} WHERE nid = %d", $nid))) {
+    $update = 'nid';
+  }
+
+  $data = (object) array(
+    'nid' => $nid,
+    'asset_id' => $asset_id,
+    'status' => $status,
+  );
+
+  return drupal_write_record('richmedia_asset', $data, $update);
+}
+
+/**
+ * Function for deleting all locally stored mediafile information.
+ * @param int $nid Node ID.
+ */
+function _richmedia_mediafile_delete($nid) {
+  db_query("DELETE FROM {richmedia_media} WHERE nid = %d", $nid);
+}
+
+/**
+ * Function for storing mediafile information in a local database table.
+ */
+function _richmedia_mediafile_store($nid, $mediafile_id, $data) {
+  $data = (object)$data;
+  $data->nid = $nid;
+  $data->mediafile_id = $mediafile_id;
+  $update = array();
+  if (db_result(db_query("SELECT nid FROM {richmedia_media} WHERE nid = %d AND mediafile_id = '%s'", $nid, $mediafile_id))) {
+    $update = array('nid', 'mediafile_id');
+  }
+  return drupal_write_record('richmedia_media', $data, $update);
+}
+
+/**
+ * Implement hook_nodeapi().
+ * @link http://api.drupal.org/api/function/hook_nodeapi/6
+ */
+function richmedia_nodeapi(&$node, $op, $arg3 = NULL, $arg4 = NULL) {
+  if (variable_get('richmedia_' . $node->type, FALSE)) {
+    // Get the default user for VP Core
+    $user_id = variable_get('vpx_connector_username', NULL);
+
+    // Load the include file.
+    module_load_include('inc', 'richmedia');
+
+    switch ($op) {
+      case 'load':
+        $preload_images = variable_get('richmedia_upload_preload_images', array());
+
+        // Load the asset information
+        $richmedia = richmedia_get_asset_info($node->nid);
+        if (isset($preload_images[$node->nid]) && isset($richmedia->count_video) && !isset($richmedia->count_still)) {
+          // Check if mediafiles are set and if they are an array.
+          if (isset($richmedia->mediafiles) && is_array($richmedia->mediafiles)) {
+            richmedia_preload_images($richmedia->mediafiles, $user_id, $node->nid);
+            // Reload the information.
+            $richmedia = richmedia_get_asset_info($node->nid, NULL, NULL, TRUE);
+          }
+        }
+
+        return array(
+          'richmedia' => $richmedia,
+        );
+
+      case 'update': // Intentional fallthrough.
+      case 'insert':
+        if (isset($node->richmedia, $node->richmedia->asset_id)) {
+          //_richmedia_asset_delete($node->nid);
+          _richmedia_asset_store($node->nid, $node->richmedia->asset_id, $node->richmedia->status);
+
+          // Refresh the information from the database table and store the new
+          // value in the static variable and node object.
+          $node->richmedia = richmedia_get_asset_info($node->nid, $node->richmedia->asset_id, $node->richmedia->status);
+        }
+
+        $asset = richmedia_get_asset_info($node->nid);
+        if (!$asset && variable_get('richmedia_asset_create', TRUE)) {
+          // Create an asset in the VP-Core application.
+          if ($asset_id = richmedia_api_create_asset($node->nid, $user_id)) {
+            _richmedia_asset_store($node->nid, $asset_id);
+
+            // Refresh the information from the database table and store the new
+            // value in the static variable and node object.
+            $node->richmedia = richmedia_get_asset_info($node->nid, $asset_id, 0);
+          }
+        }
+        break;
+
+      case 'delete':
+        if ($asset = richmedia_get_asset_info($node->nid)) {
+          $delete_action = variable_get('richmedia_asset_delete', 0);
+          // Call the API-like function for deleting the remove asset.
+          if (!richmedia_api_delete_asset($asset->asset_id, $user_id, ($delete_action == RICHMEDIA_DELETE_ASSET_RECURSIVE))) {
+            drupal_set_message(t('Failed to delete asset from MediaMosa'), 'error');
+          }
+          // Delete the local information stored in the database table.
+          _richmedia_asset_delete($node->nid);
+          _richmedia_mediafile_delete($node->nid);
+        }
+        break;
+
+      case 'view':
+        if (isset($node->richmedia) && module_exists('richmedia_view')) {
+          if ($arg4) {
+            //page view, render all richmedia
+            $node->content['richmedia']['#value'] = theme('richmedia_view', $node);
+            $node->content['richmedia']['#weight'] = 2;
+          }
+          else {
+            //teaser view, show 1st slide only
+            $node->content['richmedia']['#value'] = theme('richmedia_view_still', 'overview_slide', $node, 1);
+            $node->content['richmedia']['#weight'] = 2;
+          }
+        }
+    }
+  }
+}
+
+
+
+function richmedia_preload_images($mediafiles, $user_id, $nid) {
+  // Get the latest mediafile
+  $mediafile = richmedia_api_get_mediafile(array_pop($mediafiles), $user_id);
+
+  // Count if we have stills
+  if (count($mediafile->items->item->still)) {
+    foreach($mediafile->items->item->still as $key => $still) {
+      $data = array(
+        'nid' => $nid,
+        'mediafile_id' => (string) $still->mediafile_id,
+        'type' => 'STILL',
+        'placement' => (int) $still->still_order,
+        'timecode' => ((int) $still->still_time_code) * 1000,
+        'status' => 0,
+      );
+      _richmedia_mediafile_store($nid, $data['mediafile_id'], $data);
+    }
+
+    // Update the cache so doesn't load twice on load.
+    $preload_images = variable_get('richmedia_upload_preload_images', array());
+    unset($preload_images[$nid]);
+    variable_set('richmedia_upload_preload_images', $preload_images);
+  }
+}
+
+/**
+ * Implements hook_form_FORM_ID_alter().
+ */
+function richmedia_form_node_type_form_alter(&$form, &$form_state) {
+  $form['richmedia'] = array(
+    '#type' => 'fieldset',
+    '#title' => t('Rich Media'),
+    '#description' => '',
+    '#collapsible' => TRUE,
+    '#collapsed' => !(variable_get('richmedia_'. $form['#node_type']->type, FALSE)),
+    '#access' => user_access('administer richmedia'),
+  );
+
+  $form['richmedia']['richmedia'] = array(
+    '#type' => 'checkbox',
+    '#title' => t('Enable richmedia functionality'),
+    '#description' => '',
+    '#default_value' => variable_get('richmedia_'. $form['#node_type']->type, FALSE),
+  );
+}
+
+/**
+ * Request the url to a video file
+ * @param string $asset_id id of the asset that contains the video
+ * @param string $mediafile id of the video within the asset
+ */
+function richmedia_get_video_url($asset_id, $mediafile) {
+  module_load_include('inc', 'richmedia');
+  $user_id = variable_get('vpx_connector_username', NULL);
+  $output = richmedia_api_play_call($asset_id, $user_id, array('profile_id' => variable_get('richmedia_import_default_transcode_profile', 1), 'original_mediafile_id' => $mediafile));
+  if ($output === FALSE) {
+    drupal_set_message(t('Could not get url for mediafile %mediafile of asset %asset_id'), array('@mediafile' => $mediafile, '@asset_id' => $asset_id), 'error');
+  }
+  $url = (string)$output->items->item->output;
+  return $url;
+}
+
+/**
+ * Request html code to embed for a mediaplayer
+ */
+function richmedia_get_mediaplayer($asset_id , $mediafile, $width = 320, $height = 240) {
+    module_load_include('inc', 'richmedia');
+  $user_id = variable_get('vpx_connector_username', NULL);
+  $output = richmedia_api_play_call($asset_id, $user_id, array('response' => 'object', 'width' => $width, 'height' => $height, 'mediafile_id' => $mediafile));
+  if ($output === FALSE) {
+    drupal_set_message(t('Could not get url for mediafile %mediafile of asset %asset_id'), array('@mediafile' => $mediafile, '@asset_id' => $asset_id), 'error');
+  }
+  $html = (string)$output->items->item->output;
+  return $html;
+}
+
+

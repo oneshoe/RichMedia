@@ -1,0 +1,6 @@
+; $Id $
+name = "VPX Connector"
+description = "This module contains the login procedure, cookie handling and basic GET and POST functions to communicate with VP-X."
+package = "VPX"
+version = "6.x-0.1"
+core = 6.x

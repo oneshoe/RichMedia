@@ -1,0 +1,128 @@
+/*****************************************
+  views.css (Stylesheet by One Shoe)
+*****************************************/
+
+.view {
+  width: 100%;
+}
+
+.view-content {
+  clear:left;
+}
+
+.views-row {
+  width:100%;
+  float: left;
+  clear: left;
+  margin-bottom: 20px;
+}
+
+.view .node {
+  margin: 0;
+}
+
+/*
+** FRONTPAGE 
+*/
+.view-frontpage {
+  margin-top: 15px;
+  padding-top: 19px;
+  border-top: #e5e5e5 1px solid;
+}
+
+.view-frontpage .view-footer {
+  float: left;
+  clear: left;
+  border-top: #e5e5e5 1px solid;  
+  width: 100%;
+  padding-top: 15px;
+}
+
+.view-frontpage .view-footer p{
+  font-size: 13px;
+  margin-bottom: 0px;
+}
+
+/* FEATURED */
+.view-featured {
+  float:left;
+  width: 280px;
+  padding-top: 10px;
+  border-top: #e5e5e5 1px solid;
+  border-bottom: #e5e5e5 1px solid;
+}
+
+/*
+**  SEARCH
+*/
+.view-filters {
+  position: relative;
+  margin-top: 15px;
+  margin-bottom: 30px;
+  float: left;
+  width: 930px;
+  background: #f2f2f2 url('../images/view_filter_bottom.gif') no-repeat bottom;
+  padding-bottom: 5px;
+}
+
+.views-exposed-form {
+  padding: 10px 15px;
+  background:  url('../images/view_filter_top.gif') no-repeat top;
+}
+
+.views-exposed-widgets {
+  width: 550px;
+}
+
+
+.views-exposed-widget .date-views-filter-wrapper,
+.views-exposed-widget .container-inline-date,
+.views-exposed-widget  .date-day,
+.views-exposed-widget .date-month,
+.views-exposed-widget .date-year {
+  float:left;
+}
+
+.views-exposed-widget {  
+  float:left;
+}
+
+.views-exposed-widget{
+  margin-right: 55px;
+}
+
+
+.views-exposed-widget  #edit-presenter-wrapper select {
+  width: 150px;
+}
+
+
+
+.views-exposed-widget .form-submit{
+  margin: 0  0 10px 0;
+}
+
+.view-presentation-search .view-content {
+  border-top: #e5e5e5 1px solid;
+  padding-top: 20px;
+}
+
+/*
+**  PRESENTATIONS & TAXONOMY
+*/
+.view-presentation,
+.view-taxonomy-term {
+  margin-top: 35px;
+}
+
+.view-presentation .views-row,
+.view-taxonomy-term .views-row {
+  width: 400px;
+}
+
+.view-presentation .views-row-even,
+.view-taxonomy-term .views-row-even{
+  clear: none;
+  float: none;
+  margin-left: 480px;
+}

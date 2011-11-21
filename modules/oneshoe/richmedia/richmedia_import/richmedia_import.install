@@ -1,0 +1,144 @@
+<?php
+// $Id$
+
+/**
+ * @file
+ * Installation file and schema definition for
+ * richmedia_import.module
+ *
+ * @author Andre Abelmann - One Shoe interactive
+ */
+
+/**
+ * Implement hook_schema().
+ * @link http://api.drupal.org/api/function/hook_schema/6
+ * @link http://drupal.org/node/146843
+ */
+function richmedia_import_schema() {
+  // Rich Media asset table with a 1-1 relation with the node object.
+  $schema['richmedia_import'] = array(
+    'description' => 'Table to keep track of all the uploaded export files and their status',
+    'fields' => array(
+      'nid' => array(
+        'description' => 'Primary key linked to the {node}.nid.',
+        'type' => 'int',
+        'unsigned' => TRUE,
+        'not null' => TRUE,
+      ),
+      'filename' => array(
+        'description' => 'Name of the file uploaded',
+        'type' => 'varchar',
+        'length' => 255,
+        'not null' => TRUE,
+        'default' => '',
+      ),
+      'filepath' => array(
+        'description' => 'Path to where file is located',
+        'type' => 'varchar',
+        'length' => 255,
+        'not null' => TRUE,
+        'default' => '',
+      ),
+      'fileext' => array(
+        'description' => 'Extension of the file',
+        'type' => 'varchar',
+        'length' => 255,
+        'not null' => TRUE,
+        'default' => '',
+      ),
+    ),
+    'primary key' => array('nid'),
+  );
+
+  return $schema;
+}
+
+/**
+ * Implement hook_install().
+ * @link http://api.drupal.org/api/function/hook_install/6
+ */
+function richmedia_import_install() {
+  // Install the schema for richmedia.
+  drupal_install_schema('richmedia_import');
+
+  // Update the array in settings.
+  $supported = _richmedia_import_supported_archives();
+  variable_set('richmedia_import_supported', $supported['supported']);
+}
+
+/**
+ * Implement hook_uninstall().
+ * @link http://api.drupal.org/api/function/hook_uninstall/6
+ */
+function richmedia_import_uninstall() {
+  // Uninstall the schema for richmedia.
+  drupal_uninstall_schema('richmedia_import');
+  db_query("DELETE FROM {variable} WHERE name LIKE 'richmedia_import_%'");
+  cache_clear_all();
+}
+
+/**
+ * Function for checking which command line tools are available for unpacking
+ * archives.
+ * @return Returns an array keyed by the file extension with the available command
+ *         as value.
+ */
+function _richmedia_import_supported_archives() {
+  $types = array(
+    'rar' => 'unrar',
+    'zip' => 'unzip',
+    'gz' => 'tar',
+    'bz2' => 'tar',
+    'tar.gz' => 'tar',
+    'tar.bz2' => 'tar',
+    'tar' => 'tar',
+  );
+
+  $supported = array();
+
+  foreach ($types as $ext => $command) {
+    if (trim(@exec('which '. $command))) {
+      $supported[$ext] = $command;
+    }
+  }
+
+  return array('supported' => $supported, 'all' => $types);
+}
+
+/**
+ * Implement hook_requirements().
+ * @link http://api.drupal.org/api/function/hook_requirements/6
+ */
+function richmedia_import_requirements($phase) {
+  $requirements = array();
+
+  if ($phase == 'runtime') {
+    $supported = _richmedia_import_supported_archives();
+    $t = get_t();
+
+    $extensions = array();
+    // Preprocess the list of required extensions for archive support.
+    foreach ($supported['all'] as $ext => $command) {
+      $extensions[$command][$ext] = '*.'. $ext;
+    }
+
+    foreach ($extensions as $command => $exts) {
+      $available = in_array($command, $supported['supported']);
+
+      $requirements['richmedia_'. $command] = array(
+        'title' => $t('Rich Media @package package', array('@package' => $command)),
+        'description' => $t('For the Rich Media upload process to be able to unpack @extensions files, the %command tool needs to be available.', array(
+          '@extensions' => implode(', ', $exts),
+          '%command' => $command,
+        )),
+        'value' => $available ? t('Available') : t('Not installed'),
+        'severity' => $available ? REQUIREMENT_OK : REQUIREMENT_WARNING,
+      );
+    }
+
+    // Update the array in settings.
+    variable_set('richmedia_import_supported', $supported['supported']);
+  }
+
+  return $requirements;
+}

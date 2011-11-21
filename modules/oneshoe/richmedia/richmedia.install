@@ -1,0 +1,150 @@
+<?php
+// $Id$
+
+/**
+ * @file
+ * Installation file and schema definition for richmedia.module.
+ *
+ * @author One Shoe - www.oneshoe.nl
+ */
+
+/**
+ * Implements hook_schema().
+ * @link http://api.drupal.org/api/function/hook_schema/6
+ * @link http://drupal.org/node/146843
+ */
+function richmedia_schema() {
+
+  // Rich Media asset table with a 1.1 relation with the node object.
+  $schema['richmedia_asset'] = array(
+    'description' => 'The base table for richmedia.module containing assets.',
+    'fields' => array(
+      'nid' => array(
+        'description' => 'Primary key linked to the {node}.nid.',
+        'type' => 'int',
+        'unsigned' => TRUE,
+        'not null' => TRUE,
+      ),
+      'asset_id' => array(
+        'description' => 'MediaMosa asset identifier string.',
+        'type' => 'varchar',
+        'length' => 32,
+        'not null' => TRUE,
+        'default' => '',
+      ),
+      'status' => array(
+        'description' => 'The asset status.',
+        'type' => 'int',
+        'size' => 'tiny',
+        'unsigned' => TRUE,
+        'not null' => TRUE,
+        'default' => 0,
+      ),
+    ),
+    'unique keys' => array(
+      'asset_id' => array('asset_id'),
+    ),
+    'primary key' => array('nid'),
+  );
+
+  // Rich Media mediafile table with a 1.n relation with the node object.
+  $schema['richmedia_media'] = array(
+    'description' => 'The base table for richmedia.module containing assets.',
+    'fields' => array(
+      'nid' => array(
+        'description' => 'Primary key linked to the {node}.nid.',
+        'type' => 'int',
+        'unsigned' => TRUE,
+        'not null' => TRUE,
+      ),
+      'mediafile_id' => array(
+        'description' => 'MediaMosa mediafile identifier string.',
+        'type' => 'varchar',
+        'length' => 32,
+        'not null' => TRUE,
+        'default' => '',
+      ),
+      'type' => array(
+        'description' => 'The type of mediafile it concerns.',
+        'type' => 'varchar',
+        'length' => 10,
+        'not null' => TRUE,
+        'default' => '',
+      ),
+      'placement' => array(
+        'description' => 'The placement of the mediafile in the interface and priority.',
+        'type' => 'varchar',
+        'length' => 10,
+        'not null' => TRUE,
+        'default' => '',
+      ),
+      'timecode' => array(
+        'description' => 'Timecode of the mediafile in milliseconds, used for sorting stills.',
+        'type' => 'int',
+        'unsigned' => TRUE,
+        'not null' => TRUE,
+        'default' => 0,
+      ),
+      'status' => array(
+        'description' => 'The mediafile status.',
+        'type' => 'int',
+        'size' => 'tiny',
+        'unsigned' => TRUE,
+        'not null' => TRUE,
+        'default' => 0,
+      ),
+    ),
+    'primary key' => array('nid', 'mediafile_id'),
+  );
+
+  return $schema;
+}
+
+/**
+ * Implements hook_install().
+ * @link http://api.drupal.org/api/function/hook_install/6
+ */
+function richmedia_install() {
+  // Install the schema for richmedia.
+  drupal_install_schema('richmedia');
+}
+
+/**
+ * Implements hook_uninstall().
+ * @link http://api.drupal.org/api/function/hook_uninstall/6
+ */
+function richmedia_uninstall() {
+  // Uninstall the schema for richmedia.
+  drupal_uninstall_schema('richmedia');
+}
+
+/**
+ * Implements hook_requirements().
+ */
+function richmedia_requirements($phase) {
+  $t = get_t();
+  $requirements = array();
+  if ($phase == 'runtime' && module_exists('vpx_connector')) {
+    module_load_include('inc', 'richmedia');
+
+    $requirements['richmedia_mediamosa'] = array(
+      'title' => $t('Rich Media - MediaMosa'),
+      'severity' => REQUIREMENT_ERROR,
+      'value' => l($t('Not configured'), 'admin/settings/vpx_connector'),
+      'description' => $t('The MediaMosa connector needs to be configured.'),
+    );
+    if (drupal_strlen(variable_get('vpx_connector_username', NULL)) && drupal_strlen(variable_get('vpx_connector_password', NULL)) && variable_get('vpx_connector_uri', '')) {
+      // Check if VPX-connector can make a connection.
+      if ($response = @richmedia_api_asset_list(variable_get('vpx_connector_username', NULL), 1)) {
+        unset($requirements['richmedia_mediamosa']['description']);
+        $requirements['richmedia_mediamosa']['value'] = $t('Connected');
+        $requirements['richmedia_mediamosa']['severity'] = REQUIREMENT_OK;
+      }
+      else {
+        $requirements['richmedia_mediamosa']['value'] = l($t('Unable to connect'), 'admin/settings/vpx_connector');
+        $requirements['richmedia_mediamosa']['description'] = $t('The MediaMosa connector is not configured properly, connection could not be established.');
+      }
+    }
+  }
+  return $requirements;
+}

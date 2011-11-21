@@ -1,0 +1,17 @@
+/* $Id$ */
+
+.richmedia-upload-area .richmedia-upload-form {
+  clear:left;
+}
+
+.inactive {
+  display: none;
+}
+
+.active {
+  display: block;
+}
+
+.richmedia-upload-area .richmedia-upload-form h3 {
+  font-size:18px;
+}

@@ -1,0 +1,366 @@
+<?php
+// $Id$
+
+// @todo Check status of transcoded files to ensure they have correct status in DB
+
+/**
+ * @file
+ * Module for importing MediaSite export files, extract and process them.
+ *
+ * @name Rich Media Import
+ * @author Andre Abelmann - One Shoe interactive
+ */
+
+/**
+ * Implement hook_perm().
+ * @link http://api.drupal.org/api/function/hook_perm/6
+ */
+function richmedia_import_perm() {
+  return array('administer richmedia_import');
+}
+
+/**
+ * Implement hook_menu().
+ * @link http://api.drupal.org/api/function/hook_menu/6
+ */
+function richmedia_import_menu() {
+  $items = array();
+  $items['admin/build/richmedia/import'] = array(
+    'title' => 'Import settings',
+    'access arguments' => array('administer richmedia_import'),
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array('richmedia_import_settings_form'),
+    'file' => 'richmedia_import.admin.inc',
+    'weight' => 0,
+    'type' => MENU_LOCAL_TASK,
+  );
+  return $items;
+}
+
+/**
+ * Implement own hook_richmedia_upload().
+ * @see richmedia_upload.module
+ */
+function richmedia_import_richmedia_upload($node) {
+  return array(
+    'mse' => array(
+      'name' => t('Upload Presentation exportfile'),
+      'description' => t('Choose a Presentation exportfile to upload and process.'),
+      'handler' => 'richmedia_import_handler_upload_page',
+      'file' => 'richmedia_import_upload.handler.inc',
+    ),
+  );
+}
+
+/**
+ * Implementation of hook_cron().
+ * @link http://api.drupal.org/api/function/hook_cron/6
+ */
+function richmedia_import_cron() {
+  // Include functions
+  module_load_include('inc', 'richmedia');
+
+  // The url used in the upload
+  $url = variable_get('vpx_connector_uri', NULL);
+
+  // The used username
+  $user_id = variable_get('vpx_connector_username', NULL);
+
+  // Get all the uploaded presentation files.
+  $result = db_query("SELECT ri.nid, ri.filename, ri.filepath, ri.fileext FROM {richmedia_import} ri INNER JOIN {richmedia_asset} ra ON ri.nid = ra.nid WHERE ra.status = %d", RICHMEDIA_STATUS_UPLOADED);
+  // Each record is an file we have to process.
+  while ($record = db_fetch_object($result)) {
+    // Create the node we use are parsing
+    $node = node_load($record->nid);
+    // Function to unpack & parse the XML of the uploaded archive.
+    _richmedia_import_parse_archive($url, $user_id, $node, $record->filepath, $record->fileext);
+  }
+
+  // Unfortunately we can't unpack, process and transcode in 1 loop.
+  // Mediamosa has trouble with transcoding files that have just been uploaded.
+  $result = db_query_range("SELECT ra.asset_id, rm.mediafile_id, ra.nid FROM {richmedia_asset} ra INNER JOIN {richmedia_media} rm ON ra.nid = rm.nid WHERE rm.type = '%s' AND ra.status = %d", 'VIDEO', RICHMEDIA_STATUS_UPLOADED, 0, 1);
+  $profile = array('profile_id' => variable_get('richmedia_import_default_transcode_profile', 0));
+
+  while ($record = db_fetch_object($result)) {
+    $response = richmedia_api_create_transcode_job($record->mediafile_id, $user_id, $profile);
+    if (_richmedia_import_check_result($response) === TRUE) {
+      _richmedia_asset_store($record->nid, $record->asset_id, RICHMEDIA_STATUS_TRANSCODING);
+    }
+  }
+}
+
+/**
+ * Helper function to invoke the correct function on the server.
+ * Here we assume it's an linux server
+ *
+ * tar, tar.gz, tar.bz2, gz, bz2 will all use tar to unpack with different options.
+ * however tar will always restore the directory structure. To ensure all files are in
+ * 1 single directory we will use a bypass.
+ *
+ * @param String $url url of the server we are using.
+ * @param String $user_id account information for the server
+ * @param Object $node Node object
+ * @param String $path Path to the file we are processing
+ * @param String $ext The extension of the file
+ */
+function _richmedia_import_parse_archive($url, $user_id, $node, $path, $ext) {
+  // Define default variables
+  $xml = array();
+  $supported = variable_get('richmedia_import_supported', array());
+  $bypass = FALSE;
+  $options = array();
+
+  // Check if the upload path exists
+  $unpack = variable_get('richmedia_import_unpackpath', file_directory_path().'/unpacked');
+  file_check_directory($unpack, FILE_CREATE_DIRECTORY);
+
+  // Check if there is a temp directory, if not creates it.
+  // This directory is used to handle bypassing the unpack problem of tar.
+  $temp_path = $unpack .'/temp';
+  file_check_directory($temp_path, FILE_CREATE_DIRECTORY);
+
+  // Checks if there is an unpack directory and creates if needed.
+  $unpack_path = $unpack .'/'. $node->nid;
+  file_check_directory($unpack_path, FILE_CREATE_DIRECTORY);
+
+  switch($ext) {
+    case 'zip':
+      exec($supported[$ext] .' -j -q -n -d '. $unpack_path .' '. $path, $output);
+    break;
+    case 'rar':
+      exec($supported[$ext] .' e -o- -inul '. $path .' '. $unpack_path, $output);
+    break;
+    case 'tar':
+      exec($supported[$ext] .' -C '. $temp_path .' -xf '. $path, $output);
+      $bypass = TRUE;
+    break;
+    case 'tar.gz': // Intentional Fallthrough, use same command
+    case 'gz':
+      exec($supported[$ext] .' -C '. $temp_path .' -zxf '. $path, $output);
+      $bypass = TRUE;
+    break;
+    case 'tar.bz2': // Intentional Fallthrough, use same command
+    case 'bz2':
+      exec($supported[$ext] .' -C '. $temp_path .' -jxf '. $path, $output);
+      $bypass = TRUE;
+    break;
+  }
+  // Apply the bypass else use normal way.
+  if ($bypass) {
+    exec('find '. $temp_path .'/ -name "*.*" -exec mv --force {} '. $unpack_path .'/ \;', $output);
+    exec('rm -R '. $temp_path, $output);
+  }
+
+  // find the XML provided in the archive.
+  exec('find '. $unpack_path .'/ -name "*.xml"', $xmls);
+
+  // Here we check if we found any XML files and check if the setup is correct.
+  if (count($xmls) > 1) {
+    foreach($xmls as $key => $path) {
+      $xml = simplexml_load_file($path, 'SimpleXMLElement', 0);
+      // Check if both the SlidesList and the MediaFilename are defined, else its the wrong xml file.
+      if (isset($xml->SlideList, $xml->MediaMetadata->ReplayMediaFileName)) {
+        // We process the ReplayMediafile seperately & first to ensure its correct.
+        // Create a mediafile_id.
+        $media_file = richmedia_api_create_mediafile($node->richmedia->asset_id, $user_id);
+
+        // Create a upload ticket so we actually upload to the server.
+        $upload_ticket = richmedia_api_create_upload_ticket($media_file, $user_id);
+
+        $options = array(
+          'upload_ticket' => (string) $upload_ticket->ticket,
+          'filename' => (string) $xml->MediaMetadata->ReplayMediaFileName,
+          'user_id' => $user_id,
+        );
+
+        // Check if the PUT was successful
+        $file = $unpack_path .'/'. (string) $xml->MediaMetadata->ReplayMediaFileName;
+
+        if ($response = _richmedia_import_put_file($url, '/mediafile/upload', $options, $file)) {
+          // PUT was succesful, should be in remote system now, so we retrieve it to make our own records complete
+          //$uploaded_file = richmedia_api_get_mediafile($media_file, $user_id);
+          $object = (object) array(
+            'nid' => $node->nid,
+            'mediafile_id' => $media_file,
+            'type' => 'VIDEO',
+            'placement' => 0,
+            'timecode' => (int) $xml->Properties->Duration,
+            'status' => 1,
+          );
+          _richmedia_mediafile_store($node->nid, $media_file, $object);
+        }
+        // Now we process the SlideList
+        foreach($xml->SlideList->Slide as $slide) {
+          // Create seperate mediafile for each of the slides.
+          // $media_file = richmedia_api_create_mediafile($node->richmedia->asset_id, $user_id);
+          // Create a upload ticket so we actually upload to the server.
+          $upload_ticket = richmedia_api_create_upload_ticket($media_file, $user_id);
+          $slide_id = (int) $slide->SlideNumber;
+
+          $options = array(
+            'asset_id' => $node->richmedia->asset_id,
+            'upload_ticket' => (string) $upload_ticket->ticket,
+            'mediafile_id' => $media_file,
+            'user_id' => $user_id,
+            'order' => $slide_id,
+            'still_time_code' => (int) $slide->PresentationTime,
+            'file' => "@".$unpack_path .'/'. $slide->FileName,
+            'still_upload' => 'TRUE',
+          );
+          $new_url = $url .'/asset/'. $node->richmedia->asset_id .'/still/upload';
+          if ($response = simplexml_load_string(_richmedia_import_post_file($new_url, $options, $slide->FileName))) {
+            $object = (object) array(
+              'nid' => $node->nid,
+              'mediafile_id' => (string) $response->items->item->still_id,
+              'type' => 'STILL',
+              'placement' => $slide_id,
+              'timecode' => (int) $slide->PresentationTime,
+              'status' => 0,
+            );
+            _richmedia_mediafile_store($node->nid, (string) $response->items->item->still_id, $object);
+          }
+        }
+      }
+      unset($xml);
+    }
+    exec('rm -R '. $unpack_path, $output);
+  }
+}
+
+
+/**
+ * Helper function to upload mediafiles to mediamosa using HTTP PUT
+ * @param String $url url of the server we are using
+ * @param String $callback the callback we are invoking.
+ * @param Array $options array with several options used in the callback.
+ * @param String $file path to the file.
+ * @return boolean Either TRUE or FALSE.
+ */
+function _richmedia_import_put_file($url, $callback, $options, $file) {
+  // Set Default Values
+  $return = FALSE;
+
+  // Initiate Curl, set options, Excute and close curl connection.
+  $url .= richmedia_create_url($callback, $options);
+  $ch = curl_init();
+  curl_setopt($ch, CURLOPT_URL, $url);
+  curl_setopt($ch, CURLOPT_PUT, 1);
+  curl_setopt($ch, CURLOPT_INFILE, fopen($file, 'r'));
+  curl_setopt($ch, CURLOPT_INFILESIZE, filesize($file));
+  curl_setopt($ch, CURLOPT_RETURNTRANSFER, TRUE);
+  $response = curl_exec($ch);
+  curl_close($ch);
+
+  // Check if the response is correct
+  if (_richmedia_import_check_result(simplexml_load_string($response)) === TRUE) {
+    $return = $response;
+  }
+
+  $message = "REQUEST:\n";
+  $message .= 'PUT ' . $url . "\n";
+  $message .= "FILE: $file\n";
+  $message .= "\n";
+  $message .= "RESPONSE:\n";
+  $message .= htmlentities($response) . "\n";
+  $message .= "CALLED FROM:\n";
+  $debug_backtrace = debug_backtrace();
+  for ($i = 0; $i < 5; $i++) {
+    $message .= $debug_backtrace[$i]['function'] . ' ';
+    $message .= '(' . basename($debug_backtrace[$i]['file']) . ' ';
+    $message .= $debug_backtrace[$i]['line'] . ")\n";
+  }
+  $message .= "\n";
+
+  // Do logging based on Richmedia debug settings
+  richmedia_debug(nl2br($message));
+
+  // Return the value
+  return $return;
+}
+
+/**
+ * Helper function to upload stills to mediamosa using HTTP POST.
+ * @param String $url url of the place we are POSTING to.
+ * @param Array $postdata Array filled with data for the POST
+ * @param String $filename name of the file we are POSTING
+ * return boolean Either TRUE of FALSE
+ */
+function _richmedia_import_post_file($url, $postdata, $filename) {
+  // Set default values
+  $return = FALSE;
+
+  // Initiate Curl, Set options, Execute call and close curl connection
+  $ch = curl_init();
+  curl_setopt($ch, CURLOPT_URL, $url);
+  curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);
+  curl_setopt($ch, CURLOPT_POST, 1);
+  curl_setopt($ch, CURLOPT_POSTFIELDS, $postdata);
+  curl_setopt($ch, CURLOPT_COOKIE, variable_get('vpx_connector_cookie', NULL));
+  $response = curl_exec($ch);
+  curl_close($ch);
+
+  // Check if the response is correct
+  if (_richmedia_import_check_result(simplexml_load_string($response)) === TRUE) {
+    $return = $response;
+  }
+
+  // Do logging based on Richmedia debug settings
+  richmedia_debug(
+    'HTTP POST Request to @url',
+    array(
+      '@url' => $url,
+    ),
+    $response
+  );
+
+  return $return;
+}
+
+/**
+ * Function to return a list of all the slides.
+ * @param Integer $nid Node id.
+ * @param Integer $order_id Id of the place the slide is in the array
+ * @param Boolean $reset Either True or False to reset the static array.
+ * @return Array Either array with entire order list of a single Nid or array with info about 1 slide.
+ */
+function richmedia_import_get_timecodes($nid, $order_id = NULL, $reset = FALSE) {
+  static $slides;
+
+  if ($reset) {
+    $slides = array();
+  }
+
+  if (!isset($slides[$nid])) {
+    $result = db_query("SELECT mediafile_id, type, placement, timecode, status FROM {richmedia_media} WHERE type = '%s' AND nid = %d", 'STILL', $nid);
+    while ($record = db_fetch_object($result)) {
+      $slides[$nid][$record->placement] = $record;
+    }
+  }
+
+  return ($order_id) ? ((isset($slides[$nid][$order_id])) ? $slides[$nid][$order_id] : FALSE) : ((isset($slides[$nid])) ? $slides[$nid] : FALSE);
+}
+
+/**
+ * Helper function to check results from the curl.
+ * @param Object $result SimpleXML object with the response of the server
+ * @param String $ok Message to set when response is ok
+ * @param String $error Provide an Error message to use if the server response is 601 or 705
+ * @return Boolean True or False.
+ * @see vpx_connector_class.inc
+ */
+function _richmedia_import_check_result($result, $ok = FALSE, $error = FALSE) {
+  $result_id = (int)$result->header->request_result_id;
+  if ($result_id != 601 && $result_id != 705) {
+    if ($error) {
+      $error = t($error, array('%code' => $result_id, '%message' => $result->header->request_result_description));
+      drupal_set_message($error, 'error');
+    }
+    return FALSE;
+  }
+  else {
+    if ($ok) {
+      drupal_set_message(t($ok));
+    }
+    return TRUE;
+  }
+}

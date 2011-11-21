@@ -1,0 +1,274 @@
+/*****************************************
+  system.css (Stylesheet by One Shoe)
+*****************************************/
+/*
+** HTML elements
+*/
+.tabledrag-processed{
+  margin-bottom:10px;
+}
+
+.tabledrag-processed tr.even,
+.tabledrag-processed tr.odd {
+  background-color: #004caa;
+  border-bottom: 1px solid #ccc;
+  padding: 1px 6px;
+  color:#fff;
+}
+.tabledrag-processed tr.drag {
+  background-color: #0259c3;
+}
+
+.tabledrag-processed tr.drag-previous {
+  background-color: #0259c3;
+}
+
+.tableHeader-processed th{
+  background-color: #013b82;
+  left:0;
+  color:#fff;
+}
+
+/*
+** Table drag and drop.
+*/
+.draggable a.tabledrag-handle {
+  cursor: move;
+  float: left;
+  height: 17px;
+  margin: -4px 0 -4px -5px;
+  padding: 4px 15px 4px 5px;
+  text-decoration: none;
+}
+
+a.tabledrag-handle:hover {
+  text-decoration: none;
+}
+
+a.tabledrag-handle .handle {
+  margin-top: 4px;
+  height: 13px;
+  width: 13px;
+  background: url('../images/draggable.png') no-repeat 0 0;
+}
+
+a.tabledrag-handle-hover .handle {
+  background-position: 0 -20px;
+}
+
+/* TABS WRAPPER*/
+#tabs-wrapper {
+  float: left;
+  margin: 15px 0 0 0;
+  width: 100%;
+}
+
+#tabs-wrapper ul {
+  margin:0;
+  float: left;
+  clear:both;
+  width: 100%;
+}
+
+/* TABS PRIMARY */
+#tabs-wrapper .primary {
+  border-bottom: 1px solid #878787;
+}
+
+#tabs-wrapper .primary li{
+  float: left;
+  list-style: none;
+  background: #878787;
+  border-right: 1px solid #e5e5e5;
+}
+
+#tabs-wrapper .primary li a{
+  padding: 5px 10px;
+  display:block;
+  text-decoration:none;
+  color:#fff;
+}
+
+#tabs-wrapper .primary li a.active,
+#tabs-wrapper .primary li.active a,
+#tabs-wrapper .primary li a:hover{
+  text-decoration:none;
+  background: #fff;
+  color:#575757;
+}
+
+/* TABS SCONDARY */
+#tabs-wrapper .secondary li{
+  float: left;
+  list-style: none;
+  background: #e5e5e5;
+  border-right: 1px solid #fff;
+}
+
+#tabs-wrapper .secondary li a{
+  padding: 5px 7px;
+  display:block;
+  text-decoration:none;
+  color:#575757;
+}
+
+#tabs-wrapper .secondary li a.active,
+#tabs-wrapper .secondary li a:hover{
+  text-decoration:none;
+  background: #fff;
+  color:#575757
+}
+
+
+/*  ADMIN LINKS */
+.views-admin-links {
+  float: left;
+  margin: 0px 0px 20px 0px;
+  width: 100%;
+}
+
+.views-admin-links ul.links {
+  margin:0;
+  float: left;
+  clear:both;
+  width: 100%;
+  font-size: 12px;
+  border-bottom: 1px solid #e5e5e5;
+}
+
+.views-admin-links ul.links li{
+  float: left;
+  list-style: none;
+  background: #878787;
+  border-right: 1px solid #e5e5e5;
+}
+
+.views-admin-links .links a {
+  padding: 5px 7px;
+  display:block;
+  text-decoration:none;
+  color:#fff;
+}
+
+.views-admin-links .links a:hover {
+  text-decoration:none;
+  background: #fff;
+  color:#575757
+}
+
+/*  MESSAGES  */
+.messages {
+  margin: 15px 0 0 0;
+  float:left;
+  width: 900px;
+  clear:both;
+  background: #fde5d2;
+  font-size: 12px;
+  padding: 15px;
+}
+
+.error {
+  color: red;
+}
+
+.ok{
+  color: green;
+}
+
+.warning {
+  color:  orange;
+}
+
+/*
+** Progressbar styles
+*/
+.progress {
+  margin-top: 20px;
+  padding-bottom: 40px;
+  float:left;
+  width:100%;
+  font-weight: bold;
+}
+
+.progress .message,
+.progress .percentage {
+  font-size: 12px;
+  font-weight: normal;
+}
+
+.progress .bar {
+  background: #e5e5e5;
+  border: none;
+  height: 40px;
+  margin: 10px 2px 0 2px;
+}
+
+.progress .filled {
+  background: #0290bf;
+  height: 40px;
+  border: none;
+  width: 0%;
+}
+
+.progress .percentage {
+  float: right; /* LTR */
+}
+
+.progress-disabled {
+  float: left; /* LTR */
+}
+
+/*
+**  ADMIN PAGE
+*/
+
+.page-admin #tabs-wrapper {
+  margin-bottom: 15px;
+}
+
+.page-admin .messages {
+  margin: 0 0 15px 0 ;
+  float:left;
+  width: 450px;
+}
+
+.page-admin #sidebar-right {
+  width: 40%;
+}
+
+.page-admin  #main-region {
+  width: 50%;
+  float:left;
+}
+
+/*
+**  USER PAGE
+*/
+
+.page-user #tabs-wrapper {
+  margin-bottom: 15px;
+}
+
+.page-user .profile-holder {
+  margin-top: 15px;
+  margin-bottom: 30px;
+  float: left;
+  width: 930px;
+  background: #f2f2f2 url('../images/view_filter_bottom.gif') no-repeat bottom;
+  padding-bottom: 5px;
+  display: block;
+}
+
+.page-user .profile {
+  padding: 10px 15px;
+  background:  url('../images/view_filter_top.gif') no-repeat top;
+}
+
+.page-user .profile h3{
+  font-weight: bold;
+  margin-top: 5px;
+}
+
+.page-user .profile dl{
+  margin: 0;
+}

@@ -1,0 +1,69 @@
+/*****************************************
+  blocks.css (Stylesheet by One Shoe)
+*****************************************/
+
+h3.block-title {
+	font-size: 18px;
+  color: #f67c20;
+  font-weight: bold;
+  margin-bottom: 15px;
+}
+
+/*
+**  FRONTPAGE
+*/
+
+/*  CONTENT BLOCK */
+#block-block-1 {
+  margin-bottom: 30px;
+}  
+
+#block-block-1 .block-content-holder-bottom {
+  background: #f2f2f2 url('../images/front_block_bottom.gif') no-repeat bottom;
+  padding-bottom: 5px;
+}
+
+#block-block-1 .block-content-holder-top{
+  background: #f2f2f2 url('../images/front_block_top.gif') no-repeat top;
+  padding: 20px;
+  color: #797979;
+}
+
+#block-block-1 .content p{
+  margin-bottom: 10px;
+  font-size: 15px;
+  line-height: 15px;
+}
+
+
+/* TAGADELIC  */
+.block-tagadelic {
+  float:left;
+  width: 276px;
+  margin-right: 35px;
+}
+
+.block-tagadelic .block-content-holder-bottom {
+  background: url('../images/tagadelic_bottom.gif') no-repeat bottom;
+  padding-bottom: 3px;
+}
+
+.block-tagadelic .block-content-holder-top {
+  background: url('../images/tagadelic_top.gif') no-repeat 0 0;
+  padding-top: 3px;
+}
+
+.block-tagadelic .content{
+  border-left: 1px solid #e5e5e5;	
+  border-right: 1px solid #e5e5e5;	
+	text-align:center;
+	padding: 15px;
+}
+
+.block-tagadelic .more-link {
+  margin-top: 15px;
+  border-top: #e5e5e5 1px solid;
+  padding-top: 10px;
+  text-align:right;
+  font-size: 12px;
+}

@@ -1,0 +1,120 @@
+/*****************************************
+  nodes.css (Stylesheet by One Shoe)
+*****************************************/
+
+.node {
+  float:left;
+  margin: 20px 0;
+  width: 100%;
+}
+
+/*
+** TEASER
+*/
+.node .teaser-image {
+  float:left;
+}
+
+.node .teaser-title{
+  margin-bottom: 5px;
+}
+
+.node .teaser-content {
+  width: 190px;
+  margin-left: 20px;
+  display: block;
+  float: left;
+}
+
+.node .teaser-content dl{
+  float:left;
+  margin: 0;
+  width:100%;
+  line-height: 18px;
+}
+
+.node .teaser-content dl dt {
+  line-height: 18px;
+  float:left;
+  clear:both;
+  margin-right: 4px;
+}
+
+.node .teaser-content dl dd {
+  line-height: 18px;
+  margin: 0;
+}
+
+/* PRESENTATION TEASER  */
+.view-presentation .node .teaser-content {
+  width: 310px;
+}
+
+/*
+**  PRESENTATION NODE
+*/
+.node-left {
+  margin: 20px 0;
+  width: 450px;
+  float: left;
+}
+
+.node-right {
+  margin-top: 20px;
+  margin-left: 9px;
+  margin-right: -1px;
+  margin-bottom: 20px;
+  width: 472px;
+  float: right;
+}
+
+.node .presentation-info dl{
+  float:left;
+  margin: 0;
+  width:100%;
+}
+
+.node .presentation-info dl dt {
+  float:left;
+  clear:both;
+  width: 96px;
+  margin-right: 4px;
+}
+
+.node .presentation-info dl dd {
+  margin: 0 0 0 100px;
+}
+
+.node-left .content {
+  margin-top: 15px;
+}
+
+/*  media */
+.node-right.drupaltabs .tabs {
+  margin-top: -33px;
+  margin-bottom: 9px;
+}
+
+.node-right .media-holder-top {
+  margin-top: -10px;
+  float: left;
+  background:  url('../images/media_back_top.gif') no-repeat top left;
+}
+
+.node-right .media-holder-footer {
+  width: 472px;
+  padding: 4px 0;
+  float: left;
+  background:  url('../images/media_back_bottom.gif') no-repeat bottom left;
+}
+
+.node-right .tab-content {
+  width: 470px;
+  border-left: #e5e5e5 1px solid;
+  border-right: #e5e5e5 1px solid;  
+  padding: 6px 0 6px 0;
+}
+
+.node-right .slidepager {
+  width: 450px;
+}

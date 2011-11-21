@@ -1,0 +1,157 @@
+/*****************************************
+  elements.css (Stylesheet by One Shoe)
+*****************************************/
+/*Font-size is 62.5% -> 1em equal to 10px */
+
+body {
+	color:#434343;
+}
+body, td, th {
+  font-family: Arial, Helvetica, sans-serif;
+  font-size: 12px;
+}
+
+h1 {
+	font-size: 20px;
+	text-transform: uppercase;
+}
+
+h2 {
+	font-size: 18px;
+  color: #f67c20;
+}
+
+h3 {
+	font-size: 14px;
+}
+
+h4 {
+	font-size: 12px;
+}
+
+h5 {
+	font-size: 12px;
+}
+
+h1,h2,h3, h4, h5, h6 {
+	margin: 0 0 20px 0;
+}
+
+h1,h2,strong {
+	font-weight: bold;
+}
+optgroup {
+	font-weight:normal;
+}
+
+abbr,acronym {
+	border-bottom: 1px dotted #d1d1d1;
+	cursor: help;
+}
+
+em {
+	font-style: italic;
+}
+
+a{
+	text-decoration: underline;
+	color: #0290bf;
+}
+
+a:hover{
+	text-decoration: none;
+}
+
+del {
+	text-decoration: line-through;
+}
+
+blockquote,ul,ol,dl {
+	margin: 10px;
+}
+
+ol,ul,dl {
+	margin-left: 20px;
+}
+
+ol li {
+	list-style: decimal outside;
+}
+
+ul li {
+	list-style: disc outside;
+}
+
+dl dd {
+	margin-left: 10px;
+}
+
+table {
+	border-bottom: 1px solid #d1d1d1;
+	width: 100%;
+}
+
+th {
+	border-bottom: 1px solid #d1d1d1;
+}
+
+th,td {
+	padding: 5px;
+}
+
+th {
+	font-weight: bold;
+}
+
+tr.odd {
+	background: #f1f1f1;
+}
+
+caption {
+	margin-bottom: 5px;
+	text-align: center;
+}
+
+sup {
+	vertical-align: super;
+}
+
+sub {
+	vertical-align: sub;
+}
+
+p,
+fieldset,
+table,
+pre {
+	margin-bottom: 10px;
+}
+
+p {
+  line-height:18px;
+}
+
+button,
+input[type="checkbox"],
+input[type="radio"],
+input[type="reset"],
+input[type="submit"] {
+	padding:1px;
+}
+
+
+h2.page-title {
+  margin-bottom: 0;
+}
+
+.node p{
+	margin-bottom: 30px;
+}
+
+.content-page .node ul li,
+.content-page .node ol li,
+.content-page .node dl dt,
+.content-page .node dl dd,
+.content-page .node table{
+  line-height: 18px;
+}

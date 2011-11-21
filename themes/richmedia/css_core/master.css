@@ -1,0 +1,215 @@
+/*****************************************
+  master.css (Stylesheet by One Shoe)
+*****************************************/
+body {
+  background: #f1f1f1;
+}
+
+/*
+**  HEADER
+*/
+#header{
+  background: #fff url('../images/menu_back.gif') repeat-x bottom;
+}
+
+.header-content{
+  height: 110px;
+  width: 950px;
+  margin: 0 auto;
+  position:relative;
+}
+
+h1#site-name {
+  text-indent: -999px;
+  font-size:0;
+  margin: 0;
+}
+
+h1#site-name a {
+  position: absolute;
+  left: 7px;
+  top: 19px;
+  background: url('../images/site_title.gif') no-repeat;
+  width: 390px;
+  height: 35px;
+}
+
+.header-content .logo {
+  position: absolute;
+  right: 10px;
+  top: 18px;
+}
+
+/* MAIN MENU & USER MENU */
+#menu-holder {
+  width: 100%;
+  position: absolute;
+  bottom: 0px;
+}
+
+#menu-holder ul.menu{
+  margin:0;
+}
+
+#menu-holder ul.menu li{
+  list-style:none;
+  height:36px;
+  float:left;
+  background: url('../images/menu_seperator.gif') no-repeat right;
+  padding-right:1px;
+}
+
+#menu-holder ul.menu li.last{
+  background: none;
+  padding-right: 0;
+}
+
+#menu-holder ul.menu li a{
+  height: 14px;
+  float:left;
+  background: url('../images/menu_item.gif') repeat-x;
+  padding-right:1px;
+  color: #fff;
+  text-decoration:none;
+  padding: 11px 15px;
+}
+
+#menu-holder ul.menu li.active-trail a,
+#menu-holder ul.menu li a.active,
+#menu-holder ul.menu li a:hover{
+  color: #434343;
+  background: url('../images/menu_item_active.gif') repeat-x;
+}
+
+#menu-holder #main-menu{
+  margin-left: 10px;
+}
+
+#menu-holder .user-menu {
+  margin-right: 10px;
+  float:right;
+}
+
+/*
+** MAIN
+*/
+#container-holder{
+  float:left;
+  width:100%;
+  background: #fff;
+  border-bottom: #e5e5e5 1px solid;
+}
+
+#container {
+  position: relative;
+  clear:both;
+  margin:0 auto;
+  width: 950px;
+  min-height: 400px;
+}
+
+#main-region {
+  padding: 35px 10px 20px 10px;
+}
+
+.sidebar-right #main-region {
+  width: 280px;
+  float:left;
+}
+
+.content-page {
+  clear:both;
+}
+/*
+**  SUBMENU
+*/
+#submenu {
+  position:absolute;
+  left: 0;
+  top: 1px;
+  width: 100%;
+}
+
+#submenu .menu {
+  display: block;
+  height: 24px;
+  margin: 0 10px;
+  background: #f2f2f2;
+  border-right: #e5e5e5 1px solid;
+  border-bottom: #e5e5e5 1px solid;
+  border-left: #e5e5e5 1px solid;
+}
+
+#submenu .menu li {
+  list-style:none;
+  float:left;
+}
+
+#submenu .menu li a{
+  border-right: #e5e5e5 1px solid;
+  display: block;
+  padding-right:1px;
+  color: #434343;
+  text-decoration:none;
+  padding: 5px 15px;
+
+}
+
+#submenu .menu li.active-trail a,
+#submenu .menu li a.active,
+#submenu .menu li a:hover{
+  color: #434343;
+  background: #fff;
+}
+
+/*
+** SIDEBAR RIGHT
+*/
+
+#sidebar-right {
+  float:left;
+  margin-top: 35px;
+  margin-left: 40px;
+  margin-right: 10px;
+  width: 600px;
+}
+
+/*
+** FOOTER
+*/
+#footer {
+  clear:both;
+  margin:0 auto;
+  min-height: 110px;
+  width: 950px;
+  padding-top: 20px;
+}
+
+.footer-message {
+  margin-left: 10px;
+  color: #858585;
+  float:left;
+  font-size: 12px;
+}
+
+#footer-menu {
+  float:left;
+}
+
+#footer-menu ul{
+  margin:0;
+}
+
+#footer-menu ul li{
+  float: left;
+  list-style: none;
+  margin-left: 15px;
+}
+
+/* PLAYER */
+.js .player-nojs {
+  display:none;
+}
+.js .player-hasjs {
+
+}

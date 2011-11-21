@@ -1,0 +1,8 @@
+; $Id$
+name = "Rich Media Upload"
+description = "This module adds video upload functionality to nodes using the Rich Media module."
+version = "6.x-1.0-dev"
+package = Rich Media
+core = 6.x
+dependencies[] = richmedia
+dependencies[] = vpx_connector

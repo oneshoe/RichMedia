@@ -1,0 +1,1 @@
+Add a copy of the 3.x JW player in here, so that player-licenced.swf is inside this directory.

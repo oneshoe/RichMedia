@@ -1,0 +1,277 @@
+<?php
+// $Id$
+
+/**
+ * @file
+ * This module adds video upload functionality to nodes using the Rich Media
+ * module.
+ *
+ * @name Rich Media Upload
+ * @author Thijs Zoon - One Shoe interactive
+ */
+
+/**
+ * Implement hook_help().
+ * @link http://api.drupal.org/api/function/hook_help/6
+ */
+function richmedia_upload_help($path, $arg) {
+  switch ($path) {
+    case 'admin/help#richmedia_upload':
+      return '<p>'. t('This module adds video upload functionality to nodes using the Rich Media module.') .'</p>';
+  }
+}
+
+/**
+ * Implement hook_perm().
+ * @link http://api.drupal.org/api/function/hook_perm/6
+ */
+function richmedia_upload_perm() {
+  return array('upload richmedia content');
+}
+
+/**
+ * Implement hook_menu().
+ * @link http://api.drupal.org/api/function/hook_menu/6
+ */
+function richmedia_upload_menu() {
+  $items = array();
+
+  $items['admin/build/richmedia/upload'] = array(
+    'title' => 'Upload settings',
+    'access arguments' => array('administer richmedia_upload'),
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array('richmedia_upload_settings_form'),
+    'file' => 'richmedia_upload.admin.inc',
+    'type' => MENU_LOCAL_TASK,
+  );
+
+  $items['node/%node/upload'] = array(
+    'title' => 'Upload',
+    'access arguments' => array(1),
+    'access callback' => 'richmedia_upload_access',
+    'page callback' => 'richmedia_upload_page',
+    'page arguments' => array(1, 3),
+    'type' => MENU_LOCAL_TASK,
+    'weight' => 5,
+    'file' => 'richmedia_upload.upload.inc',
+  );
+
+  $items['node/%node/check'] = array(
+    'title' => 'check',
+    'access arguments' => array(1),
+    'access callback' => 'richmedia_upload_access',
+    'page callback' => 'richmedia_upload_check_upload',
+    'page arguments' => array(1, 3),
+    'type' => MENU_CALLBACK,
+    'weight' => 5,
+    'file' => 'richmedia_upload.handler.inc',
+  );
+
+  return $items;
+}
+/**
+ * Menu access callback function.
+ * @param object $node Node object for which the access check should be executed.
+ */
+function richmedia_upload_access($node) {
+  if (node_access('update', $node) && user_access('upload richmedia content') && variable_get('richmedia_upload_enabled_'. $node->type, FALSE)) {
+    $asset = _richmedia_upload_node_get_asset($node);
+    if (($asset && $asset->status <= RICHMEDIA_STATUS_UPLOADING) || !$asset) {
+      return TRUE;
+    }
+  }
+  return FALSE;
+}
+
+/**
+ * Implement hook_nodeapi().
+ * @link http://api.drupal.org/api/function/hook_nodeapi/6
+ */
+function richmedia_upload_nodeapi(&$node, $op, $arg3 = NULL, $arg4 = NULL) {
+  if (variable_get('richmedia_upload_enabled_'. $node->type, FALSE)) {
+    switch ($op) {
+      case 'update': // Intentional fallthrough.
+      case 'insert':
+        // Act on node updates or insertions.
+        if (isset($node->richmedia_upload)) {
+
+          $org_destination = FALSE;
+          if (!empty($_REQUEST['destination'])) {
+            $org_destination = $_REQUEST['destination'];
+          }
+
+          $_REQUEST['destination'] = 'node/'. $node->nid .'/upload/'. $node->richmedia_upload .($org_destination ? '?destination='. urlencode($org_destination) : '');
+        }
+        break;
+    }
+  }
+}
+
+/**
+ * Function for retrieving all available upload handlers by calling
+ * hook_richmedia_upload() implementations.
+ */
+function _richmedia_get_upload_handlers(&$node) {
+  $handlers = array();
+  foreach (module_implements('richmedia_upload') as $module) {
+    $function = $module .'_richmedia_upload';
+    $result = $function($node);
+    if (isset($result) && is_array($result)) {
+      foreach ($result as $delta => $handler) {
+        $handler['delta'] = $delta;
+        $handler['module'] = $module;
+        $handlers[$module .'-'. $delta] = $handler;
+      }
+    }
+  }
+  return $handlers;
+}
+
+/**
+ * Function for retrieving asset information for a given node object.
+ * @param object $node Node object.
+ * @return Returns asset information object (local version) or FALSE if no asset is
+ *         available.
+ */
+function _richmedia_upload_node_get_asset($node) {
+  $asset = FALSE;
+  if (isset($node->nid)) {
+    if (isset($node->richmedia) && $node->richmedia) {
+      $asset = $node->richmedia;
+    }
+    else {
+      $asset = richmedia_get_asset_info($node->nid);
+    }
+  }
+  return $asset;
+}
+
+/**
+ * Implement hook_form_alter().
+ */
+function richmedia_form_alter(&$form, &$form_state, $form_id) {
+
+  // Alter the node edit forms for all richmedia enabled content types.
+  if (isset($form['#node']) && $form_id == $form['#node']->type .'_node_form' && variable_get('richmedia_'. $form['#node']->type, FALSE) && variable_get('richmedia_upload_enabled_'. $form['#node']->type, FALSE)) {
+
+    $asset = _richmedia_upload_node_get_asset($form['#node']);
+
+    if ($asset && $asset->status >= 1) {
+      // Provide a message stating the current status of the attached mediafiles.
+      $form['richmedia'] = array(
+        '#type' => 'markup',
+        '#prefix' => 'RichMedia:<pre>',
+        '#value' => var_export($asset, TRUE),
+      	'#suffix' => '</pre>',
+      );
+    }
+    else {
+      // Provide an upload form in the next step.
+      $handlers = _richmedia_get_upload_handlers($form['#node']);
+
+      $form['richmedia_upload'] = array(
+        '#type' => 'fieldset',
+        '#title' => t('Upload'),
+        '#collapsible' => TRUE,
+      );
+
+      foreach ($handlers as $key => $handler) {
+        $form['richmedia_upload']['richmedia_upload'][$key] = array(
+          '#type' => 'radio',
+          '#required' => TRUE,
+          '#title' => $handler['name'],
+          '#description' => $handler['description'],
+          '#parents' => array('richmedia_upload'),
+          '#return_value' => check_plain($key),
+        );
+      }
+    }
+  }
+}
+
+/**
+ * Implement hook_form_FORM_ID_alter().
+ */
+function richmedia_upload_form_node_type_form_alter(&$form, &$form_state) {
+
+  $form['richmedia']['richmedia_upload_enabled'] = array(
+    '#type' => 'checkbox',
+    '#title' => t('Enable Uploads'),
+    '#description' => t('Check this box to allow users to upload media files after adding/editing content items. Once enabled you will probably need to <a href="!link_permissions">configure permissions</a> for uploading and maybe <a href="http://drupal.org/node/97193">alter the server\'s maximum upload limit</a>.', array(
+      '!link_permissions' => url('admin/user/permissions'),
+    )),
+    '#default_value' => variable_get('richmedia_upload_enabled_'. $form['#node_type']->type, FALSE),
+  );
+}
+
+/**
+ * Implement own hook_richmedia_upload().
+ */
+function richmedia_upload_richmedia_upload($node) {
+  return array(
+    'vpx' => array(
+      'name' => t('Upload Rich Media Video'),
+      'description' => t('Choose one or more video files to upload and transcode.'),
+      'handler' => 'richmedia_handler_upload_page',
+      'file' => 'richmedia_upload.handler.inc',
+    ),
+  );
+}
+
+/**
+ * Implement hook_theme().
+ */
+function richmedia_upload_theme() {
+  return array(
+    'richmedia_upload_choice' => array(
+      'arguments' => array('handlers' => array(), 'path' => ''),
+      'file' => 'richmedia_upload.upload.inc',
+    ),
+    'richmedia_handler_upload_page' => array(
+      'arguments' => array('node' => NULL, 'form_primary' => NULL, 'form_secondary' => NULL, 'form_main' => NULL),
+      'file' => 'richmedia_upload.handler.inc',
+    ),
+  );
+}
+
+/**
+ * Helper function to check if there is an upload ticket for this mediafile.
+ * If no ticket found, request new one.
+ */
+function _richmedia_upload_check_uploadticket($nid, $mediafile_id, $reset = FALSE) {
+  global $user;
+  static $upload_tickets = array();
+
+  // Check if we wanna reset the static
+  if ($reset) {
+    $upload_tickets = array();
+  }
+
+  // Check if the node has static values.
+  if (!isset($upload_tickets[$nid][$mediafile_id])) {
+    // Check if we have a ticket in the database.
+    // Only 1 ticket per mediafile in the system.
+    $upload_ticket = db_fetch_object(db_query("SELECT * FROM {richmedia_upload} WHERE nid = %d AND mediafile_id = '%s'", $nid, $mediafile_id));
+    // Check if something was found.
+    if (!$upload_ticket) {
+      // The global used username
+      $user_id = variable_get('vpx_connector_username', NULL);
+
+      // Nothing found, request an upload_ticket from Mediamosa
+      $requested_ticket = richmedia_api_create_upload_ticket($mediafile_id, $user_id);
+      $upload_ticket = (object) array(
+        'nid' => $nid,
+        'mediafile_id' => $mediafile_id,
+        'ticket' => $requested_ticket->ticket,
+        'uid' => $user->uid,
+        'created' => time(),
+      );
+      // Put the record in the database.
+      drupal_write_record('richmedia_upload', $upload_ticket);
+    }
+    // Update the static.
+    $upload_tickets[$nid][$mediafile_id] = $upload_ticket;
+  }
+  // To be sure, we double check if the mediafile_id has been set, if not something went wrong and we return FALSE;
+  return isset($upload_tickets[$nid][$mediafile_id]) ? $upload_tickets[$nid][$mediafile_id] : FALSE;
+}

@@ -1,0 +1,79 @@
+<?php
+// $Id$
+
+/**
+ * @file
+ * Installation file and schema definition for richmedia_upload.module.
+ *
+ * @author Thijs Zoon - One Shoe interactive
+ */
+
+/**
+ * Implement hook_schema().
+ * @link http://api.drupal.org/api/function/hook_schema/6
+ * @link http://drupal.org/node/146843
+ */
+function richmedia_upload_schema() {
+
+  // Rich Media mediafile table with a 1.n relation with the node object.
+  $schema['richmedia_upload'] = array(
+    'description' => 'The base table for richmedia.module containing assets.',
+    'fields' => array(
+      'nid' => array(
+        'description' => 'Primary key linked to the {node}.nid.',
+        'type' => 'int',
+        'unsigned' => TRUE,
+        'not null' => TRUE,
+      ),
+      'mediafile_id' => array(
+        'description' => 'MediaMosa mediafile identifier string, linked to {richmedia_media}.mediafile_id.',
+        'type' => 'varchar',
+        'length' => 32,
+        'not null' => TRUE,
+        'default' => '',
+      ),
+      'ticket' => array(
+        'description' => 'MediaMosa upload ticket identifier.',
+        'type' => 'varchar',
+        'length' => 32,
+        'not null' => TRUE,
+        'default' => '',
+      ),
+      'uid' => array(
+        'description' => 'User ID for the user account that has requested the ticket. Linked to {users}.uid.',
+        'type' => 'int',
+        'not null' => TRUE,
+        'unsigned' => TRUE,
+        'default' => 0,
+      ),
+      'created' => array(
+        'description' => 'Timestamp for the date the ticket request was made.',
+        'type' => 'int',
+        'not null' => TRUE,
+        'unsigned' => TRUE,
+        'default' => 0,
+      ),
+    ),
+    'primary key' => array('nid', 'ticket'),
+  );
+
+  return $schema;
+}
+
+/**
+ * Implement hook_install().
+ * @link http://api.drupal.org/api/function/hook_install/6
+ */
+function richmedia_upload_install() {
+  // Install the schema for richmedia.
+  drupal_install_schema('richmedia_upload');
+}
+
+/**
+ * Implement hook_uninstall().
+ * @link http://api.drupal.org/api/function/hook_uninstall/6
+ */
+function richmedia_upload_uninstall() {
+  // Uninstall the schema for richmedia.
+  drupal_uninstall_schema('richmedia_upload');
+}

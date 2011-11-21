@@ -1,0 +1,326 @@
+/*****************************************
+  misc.css (Stylesheet by One Shoe)
+*****************************************/
+
+/*
+**  PAGER
+*/
+.pager {
+  clear: left;
+  border-top: #e5e5e5 1px solid;
+  width: 930px;
+  padding: 20px 0 10px 0;
+  font-size:12px;
+  text-align:center;
+}
+
+.pager-left{
+  display: inline;
+}
+
+.pager .pager-first{
+  display: inline;
+  margin-right:10px;
+}
+
+.pager .pager-previous {
+  display: inline;
+  margin-right: 20px;
+}
+
+.pager .item-list {
+  display: inline;
+}
+
+.pager .item-list ul{
+  display: inline;
+  margin:0;
+}
+
+.pager .item-list li {
+  display: inline;
+  list-style: none;
+}
+
+.pager .pager-item a {
+  border: #e8e8e8 1px solid;
+  border-radius: 4px;
+  -moz-border-radius: 4px;
+  font-weight: bold;
+  padding: 5px 7px;
+  text-decoration: none;
+}
+
+.pager .pager-item a:hover {
+  background: #e8e8e8;
+  color: #434343;
+}
+
+.pager .pager-current span{
+  background: #e8e8e8;
+  border: #e8e8e8 1px solid;
+  color: #434343;
+  padding: 5px 7px;
+  font-weight: bold;
+  border-radius: 4px;
+  -moz-border-radius: 4px;
+}
+
+.pager .pager-current.first{
+  margin-left: 115px;
+}
+
+.pager .pager-current.last{
+  margin-right: 138px;
+}
+
+.pager-right{
+  display: inline;
+}
+
+.pager .pager-next {
+  display: inline;
+  margin-left: 20px;
+}
+
+.pager .pager-last{
+  display: inline;
+  margin-left:10px;
+}
+
+/*
+**  DRUPALTABS
+*/
+.drupaltabs .tabs{
+  float:left;
+  clear:left;
+  position: relative;
+  margin: 10px 0 0 0;
+  display: none;
+}
+
+.js .drupaltabs .tabs{
+  display: block
+}
+
+.drupaltabs .tabs li{
+  float: left;
+  list-style: none;
+  background: url('../images/tabs_right.gif') no-repeat right top;
+}
+
+.drupaltabs .tabs li.first a {
+  background: url('../images/tabs.gif') no-repeat 0 -50px;
+}
+
+.drupaltabs .tabs li.last {
+  background: url('../images/tabs_right.gif') no-repeat right -50px;
+}
+
+.drupaltabs .tabs li a {
+  height: 20px;
+  display:block;
+  background: url('../images/tabs.gif') no-repeat 0 0;
+  color: #fff;
+  text-decoration: none;
+  padding: 2px 8px 2px 11px;
+  margin-right: 3px;
+}
+
+.drupaltabs .tabs li.active a,
+.drupaltabs .tabs li:hover a {
+  color: #434343;
+  background:  url('../images/tabs.gif') no-repeat 0 -25px;
+}
+
+.drupaltabs .tabs li.active,
+.drupaltabs .tabs li:hover  {
+  background:  url('../images/tabs_right.gif') no-repeat right -25px;
+}
+
+.drupaltabs .tabs li.first.active a,
+.drupaltabs .tabs li.first:hover a{
+  background:  url('../images/tabs.gif') no-repeat 0 -75px;
+}
+
+.drupaltabs .tabs li.last.active,
+.drupaltabs .tabs li.last:hover {
+  background:  url('../images/tabs_right.gif') no-repeat right -75px;
+}
+
+/*  TAB CONTENT  */
+.drupaltabs .tab-content {
+  float:left;
+  clear:left;
+  position:relative;
+  overflow: hidden;
+}
+
+.js .drupaltabs .tab-content {
+  display:none;
+}
+
+.js .drupaltabs .active-tab-content {
+  display: block;
+}
+
+/*
+** Tab content slides
+*/
+.tab-content .item {
+  width: 100%;
+  clear:none;
+  position:relative;
+  left: 9px;
+}
+
+.js .tab-content .item {
+  position:absolute;
+  left: 479px;
+}
+
+.js .tab-content .active-item {
+  display: block;
+  position:relative;
+  left: 9px;
+}
+
+.tabslider .item img {
+  border: #e5e5e5 1px solid;
+}
+
+.tabslider .item .slide-active img {
+  border: #0000FF 1px solid;
+}
+
+.tabslider .slide {
+  float:left;
+  margin-right: 13px;
+  text-align: center;
+}
+
+.js .tabslider .slide {
+  padding-bottom: 15px;
+}
+
+.tabslider .slide .time{
+  display:block;
+  font-size: 12px;
+  margin-top: 5px;
+}
+
+/*
+**  SLIDEPAGER
+*/
+.tabslider .slidepager {
+  display:none;
+  float:left;
+  clear:both;
+  width: 100%;
+  text-align: center;
+  position:relative;
+  height: 30px;
+  padding-top: 4px;
+  margin-top: 10px;
+}
+
+.js .tabslider .slidepager {
+  display:block;
+}
+
+.tabslider .slidepager .slidepager-prev {
+  position: absolute;
+  left: 120px;
+  top:0;
+  display: block;
+  background: url('../images/slidepager_prev.gif') no-repeat top left;
+  text-indent: -999px;
+  width: 30px;
+  height: 30px;
+  overflow: hidden;
+}
+
+.tabslider .slidepager .slidepager-prev.disabled {
+  background: url('../images/slidepager_prev.gif') no-repeat bottom left;
+}
+
+.tabslider .slidepager .page-holder {
+  font-size: 12px;
+}
+
+.tabslider .slidepager .slidepager-nr {
+  margin: 0 5px;
+  font-size: 15px;
+  font-weight: bold;
+}
+
+.tabslider .slidepager .slidepager-next {
+  position: absolute;
+  top: 0;
+  right: 120px;
+  display: block;
+  background: url('../images/slidepager_next.gif') no-repeat top left;
+  text-indent: -999px;
+  width: 30px;
+  height: 30px;
+  overflow: hidden;
+}
+
+.tabslider .slidepager .slidepager-next.disabled {
+  background: url('../images/slidepager_next.gif') no-repeat bottom left;
+}
+
+/* NO JAVASCRIPT SITUATION*/
+#tab-slides-detail {
+  display:none;
+}
+
+.js #tab-slides-detail {
+  display: block;
+}
+
+#tab-video .item,
+.js  #tab-video .active-item{
+  left: 10px;
+}
+
+/*
+** TAGADELIC
+*/
+a.tagadelic {
+  margin: 0 5px;
+}
+
+.tagadelic.level1 {
+	font-size: 10px;
+}
+
+.tagadelic.level2 {
+	font-size: 12px;
+}
+
+.tagadelic.level3 {
+	font-size: 14px;
+}
+
+.tagadelic.level4 {
+	font-size: 16px;
+}
+
+.tagadelic.level5 {
+	font-size: 18px;
+}
+
+.tagadelic.level6 {
+	font-size: 20px;
+}
+
+.page-tagadelic .wrapper.tagadelic{
+  border-radius: 4px;
+  -moz-border-radius: 4px;
+  width:500px;
+  border: 1px solid #e5e5e5;
+  text-align:center;
+	padding: 15px;
+  margin-top: 20px;
+}

@@ -1,0 +1,9 @@
+; $Id$
+name = "Rich Media View"
+description = "Module that retrieves and caches the stills"
+version = "6.x-1.0-dev"
+package = Rich Media
+core = 6.x
+dependencies[] = vpx_connector
+dependencies[] = imagecache
+dependencies[] = richmedia

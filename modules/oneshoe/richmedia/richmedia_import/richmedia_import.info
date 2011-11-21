@@ -1,0 +1,9 @@
+; $Id$
+name = "Rich Media Import"
+description = "This module adds import functionality of Presentation exportfiles"
+version = "6.x-1.0-dev"
+package = Rich Media
+core = 6.x
+dependencies[] = richmedia
+dependencies[] = richmedia_upload
+dependencies[] = vpx_connector

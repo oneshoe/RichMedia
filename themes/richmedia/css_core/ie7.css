@@ -1,0 +1,18 @@
+/*****************************************
+  ie7.css (Stylesheet by One Shoe)
+*****************************************/
+.views-row {
+  margin-bottom: 10px;
+}
+
+.view-featured {
+  padding: 10px 0;
+}
+
+.front #main-region {
+  padding-bottom: 0;
+}
+
+fieldset {
+  margin-left: -10px;
+}

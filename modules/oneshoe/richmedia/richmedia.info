@@ -1,0 +1,7 @@
+; $Id$
+name = "Rich Media"
+description = "Main module for extending node objects with Rich Media functionality."
+version = "6.x-1.0-dev"
+package = Rich Media
+core = 6.x
+dependencies[] = vpx_connector

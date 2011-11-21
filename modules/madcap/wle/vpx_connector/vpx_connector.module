@@ -1,0 +1,96 @@
+<?php
+// $Id$
+
+/**
+* VP-Core is a Full Featured, Webservice Oriented Media Management and
+* Distribution platform (http://www.vpcore.nl)
+*
+* Copyright (C) 2009 SURFnet BV (http://www.surfnet.nl) and Kennisnet
+* (http://www.kennisnet.nl)
+*
+* VP-Core is based on the open source Drupal platform and
+* was originally developed by Madcap BV (http://www.madcap.nl)
+*
+* This program is free software; you can redistribute it and/or modify
+* it under the terms of the GNU General Public License version 2 as
+* published by the Free Software Foundation.
+*
+* This program is distributed in the hope that it will be useful, but
+* WITHOUT ANY WARRANTY; without even the implied warranty of
+* MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+* General Public License for more details.
+*
+* You should have received a copy of the GNU General Public License along
+* with this program; if not, you can find it at:
+* http://www.gnu.org/licenses/old-licenses/gpl-2.0.html
+*/
+
+/**
+ * @file
+ * This module contains the login procedure, cookie handling and basic GET
+ * and POST functions to communicate with VP-X.
+ */
+
+require_once('vpx_connector_class.inc');
+
+
+/**
+ * Implementation of hook_menu().
+ */
+function vpx_connector_menu() {
+  $items = array();
+
+  $items['admin/settings/vpx_connector'] = array(
+    'title' => t('VP-X connector settings'),
+    'description' => t('Username, password and URL settings to connect to VP-X'),
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array('vpx_connector_settings'),
+    'access arguments' => array('administer vpx connector settings'),
+    'file' => 'vpx_connector.admin.inc',
+  );
+
+  return $items;
+}
+
+
+/**
+ * Implementation of hook_perm().
+ */
+function vpx_connector_perm() {
+  return array('administer vpx connector settings', 'wle administrator');
+}
+
+
+/**
+ * Implementation of hook_block().
+ */
+function vpx_connector_block($op = 'list', $delta = 0, $edit = array()) {
+  switch ($op) {
+    case 'list':
+      $blocks[0] = array(
+        'info' => t('VP-X Connector debug info'),
+      );
+      return $blocks;
+    case 'view':
+      switch ($delta) {
+        case 0:
+          if ($_SERVER['REQUEST_METHOD'] !== 'POST' && isset($_SESSION['vpx_connector_debug_info'])) {
+            $block['subject'] = t('VP-X Connector request info');
+            $header = array(t('Method'), t('URL'), t('Response time (sec)'));
+            $rows = array();
+            foreach ($_SESSION['vpx_connector_debug_info'] as $log) {
+              $rows[] = array(
+                $log['method'],
+                $log['uri'],
+                $log['response_time']
+              );
+            }
+            $block['content'] = 'REST calls issued to build this page.';
+            $block['content'] .= theme('table', $header, $rows);
+            unset($_SESSION['vpx_connector_debug_info']);
+          }
+          break;
+      }
+      return $block;
+  }
+}
